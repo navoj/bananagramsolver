@@ -110,7 +110,7 @@ namespace WordBuilder
 		/// <param name="word"></param>
 		/// <param name="usedLetters">The letters used when adding the word, only valid</param>
 		/// <returns>The new Board after adding the word</returns>
-		public Board Add(Word word, List<char> usedLetters)
+		public Board TryAdd(Word word, List<char> usedLetters)
 		{
 			var child = new Board(this);
 
@@ -149,17 +149,70 @@ namespace WordBuilder
 				}
 			}
 
-			if (overlappedLetterCount != 1 && !isFirstWord)
+			// don't want to do an add that doesn't actually add any letters to the board
+			if (overlappedLetterCount == word.Value.Length)
 				return null;
 
-			// check that all of the words are valid
-			foreach (var boardWord in child.Words)
-			{
-				if (!_validWords.Contains(boardWord.Value))
-					return null;
-			}
+			if (!child.IsValid)
+				return null;
 
 			return child;
+		}
+
+		/// <summary>
+		/// Attempt to remove this word, does not remove any letters used by other words
+		/// </summary>
+		/// <param name="word"></param>
+		/// <param name="newLetters">Letters are added to this list if they are removed</param>
+		/// <returns>non null on success</returns>
+		public Board TryRemove(Word word, List<char> newLetters)
+		{
+			var doubleUsedCoords = CalcDoubleUsage();
+			var child = new Board(this);
+
+			foreach (var deleteLetter in word.Letters())
+			{
+				// can't remove letter used by another word
+				if (doubleUsedCoords.Contains(deleteLetter.Item1))
+					continue;
+
+				child._board.Remove(deleteLetter.Item1);
+				newLetters.Add(deleteLetter.Item2);
+			}
+
+			if (newLetters.Count == 0)
+				return null;
+
+			if (!child.IsValid)
+				return null;
+
+			return child;
+		}
+
+		/// <summary>
+		/// Compute how many different letters are being used by both a right and down word
+		/// </summary>
+		/// <returns></returns>
+		private HashSet<Coord> CalcDoubleUsage()
+		{
+			var downWordCoords = new HashSet<Coord>();
+			var rightWordCoords = new HashSet<Coord>();
+
+			foreach (var word in Words)
+			{
+				switch(word.Dir)
+				{
+					case Word.Direction.DOWN:
+						downWordCoords.UnionWith(word.Letters().Select(l => l.Item1));
+						break;
+					case Word.Direction.RIGHT:
+						rightWordCoords.UnionWith(word.Letters().Select(l => l.Item1));
+						break;
+				}
+			}
+
+			downWordCoords.IntersectWith(rightWordCoords);
+			return downWordCoords;
 		}
 
 		#endregion
@@ -195,6 +248,51 @@ namespace WordBuilder
 		#endregion
 
 		#region Properties
+
+		/// <summary>
+		/// Return true of false if this board is valid
+		/// </summary>
+		public bool IsValid
+		{
+			get
+			{
+				HashSet<Coord> seenCoords = null;
+
+				// check that all of the words are valid
+				foreach (var boardWord in Words)
+				{
+					// each word must be in dictionary
+					if (!_validWords.Contains(boardWord.Value))
+						return false;
+
+					if (seenCoords == null)
+					{
+						seenCoords = new HashSet<Coord>(boardWord.Letters().Select(x => x.Item1));
+					}
+					else
+					{
+						// check that at least one letter intersects with an existing word
+						var coords = boardWord.Letters().Select(x => x.Item1).ToArray();
+						bool overlapsExisting = false;
+						foreach(var letterCoord in coords)
+						{
+							if(seenCoords.Contains(letterCoord))
+							{
+								overlapsExisting = true;
+								break;
+							}
+						}
+
+						if (!overlapsExisting)
+							return false;
+
+						seenCoords.UnionWith(coords);
+					}
+				}
+
+				return true;
+			}
+		}
 
 		/// <summary>
 		/// Access the character at this location, char.MinValue if no actual letter exists

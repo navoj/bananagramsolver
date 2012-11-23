@@ -21,37 +21,57 @@ namespace WordBuilder
 			Console.WriteLine("Gen Trie: {0}", sw.Elapsed);
 
 
+			
+			Console.Write("Letters: ");
+
+			var rand = new Random(1);
+			var letters = bananagramsLetters.OrderBy(_ => rand.Next()).Take(10).ToArray();
+			Console.WriteLine(string.Join("", letters));
+
+			//var letters = Console.ReadLine();
+			//var letters = bananagramsLetters;
+			var solver = new Solver(trie);
+
+			sw = Stopwatch.StartNew();
+			var solution = solver.Solve(letters);
+			Console.WriteLine("Find solution: {0}", sw.Elapsed);
+
+			Console.WriteLine(solution);
+
 			while (true)
 			{
-				Console.Write("Letters: ");
+				Console.Write("Next letter:");
+				var anotherLetter = Console.ReadLine();
+				if (anotherLetter.Length != 1)
+					throw new InvalidOperationException("Expected 1 character");
 
-				//var rand = new Random();
-				//var letters = bananagramsLetters.OrderBy(_ => rand.Next()).Take(30).ToArray();
-				//Console.WriteLine(string.Join("", letters));
+				solution = solver.SolveIncremental(solution, anotherLetter[0]);
 
-				var letters = Console.ReadLine();
-				//var letters = bananagramsLetters;
-				var solver = new Solver(letters, trie);
-
-				sw = Stopwatch.StartNew();
-				solver.Solve();
-				Console.WriteLine("Find solution: {0}", sw.Elapsed);
-
-				Console.WriteLine();
-				foreach (var solution in solver.Solutions)
+				if (solution == null)
 				{
-					if (solution.Letters.Count() != letters.Length)
-					{
-						var usedLetters = new List<char>(letters);
-						foreach (var letter in solution.Letters.Select(x => x.Value))
-							usedLetters.Remove(letter);
-
-						Console.WriteLine("MISSING LETTERS! {0}", string.Join("", usedLetters.ToArray()));
-					}
-					Console.WriteLine(solution);
+					Console.WriteLine("UNABLE TO SOLVE");
 				}
+
+				Console.WriteLine(solution);
 				Console.WriteLine();
 			}
+
+
+				//Console.WriteLine();
+				//foreach (var solution in solver.Solutions)
+				//{
+				//    if (solution.Letters.Count() != letters.Length)
+				//    {
+				//        var usedLetters = new List<char>(letters);
+				//        foreach (var letter in solution.Letters.Select(x => x.Value))
+				//            usedLetters.Remove(letter);
+
+				//        Console.WriteLine("MISSING LETTERS! {0}", string.Join("", usedLetters.ToArray()));
+				//    }
+				//    Console.WriteLine(solution);
+				//}
+			//    Console.WriteLine();
+			//}
 
 
 
