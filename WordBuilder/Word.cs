@@ -55,6 +55,29 @@ namespace WordBuilder
 
 		#region Public Methods
 
+		/// <summary>
+		/// Return all letters that make up this word with thier coordinates
+		/// </summary>
+		/// <returns></returns>
+		public IEnumerable<Tuple<Board.Coord, char>> Letters()
+		{
+			switch(_dir)
+			{
+				case Word.Direction.DOWN:
+					for(var letterIndex = 0; letterIndex < _word.Length; letterIndex++)
+					{
+						yield return Tuple.Create(new Board.Coord(_coords.X, _coords.Y + letterIndex), _word[letterIndex]);
+					}
+					break;
+				case Word.Direction.RIGHT:
+					for(var letterIndex = 0; letterIndex < _word.Length; letterIndex++)
+					{
+						yield return Tuple.Create(new Board.Coord(_coords.X + letterIndex, _coords.Y), _word[letterIndex]);
+					}
+					break;
+			}
+		}
+
 		public override string ToString()
 		{
 			return string.Format("{0} @ {1} {2}", _word, _coords, _dir);
